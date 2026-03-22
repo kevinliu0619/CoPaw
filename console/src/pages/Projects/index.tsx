@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  Table, Button, Modal, Form, Input, message, Popconfirm, Space, Typography, Select, Tag, Checkbox, Steps, Divider, Radio 
+  Table, Button, Modal, Form, Input, message, Popconfirm, Space, Typography, Select, Tag, Steps, Radio
 } from "antd";
 const { OptGroup } = Select;
 import { Plus, Edit, Delete, PlayCircle, Square, Box, Settings, Sparkles } from "lucide-react";
 
 const { Title, Text } = Typography;
 
-const APP_VERSION = "v0.2.0";
+const APP_VERSION = "v0.3.0";
 
 const PRESET_MODELS = [
   { value: "gpt-4o", label: "GPT-4o", provider: "OpenAI" },
@@ -50,7 +50,7 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
-  const [selectedSkills, setSelectedSkills] = useState<string[]>(["memory", "web-fetch", "calculator"]);
+
   const [useCustomModel, setUseCustomModel] = useState(false);
   const [containerStarting, setContainerStarting] = useState(false);
   const [createdPort, setCreatedPort] = useState<number>(8090);
@@ -94,7 +94,6 @@ export default function ProjectsPage() {
     setModalVisible(false);
     form.resetFields();
     setCurrentStep(0);
-    setSelectedSkills(["memory", "web-fetch", "calculator"]);
     setUseCustomModel(false);
     setContainerStarting(false);
     setContainerReady(false);
@@ -208,7 +207,7 @@ export default function ProjectsPage() {
         open={modalVisible}
         width={700}
         footer={null}
-        onCancel={() => { setModalVisible(false); form.resetFields(); setEditingProject(null); setCurrentStep(0); setSelectedSkills(["memory", "web-fetch", "calculator"]); setUseCustomModel(false); setContainerStarting(false); setContainerReady(false); setCurrentContainerName(""); setCurrentProjectId(""); }}
+        onCancel={() => { setModalVisible(false); form.resetFields(); setEditingProject(null); setCurrentStep(0); setUseCustomModel(false); setContainerStarting(false); setContainerReady(false); setCurrentContainerName(""); setCurrentProjectId(""); }}
       >
         {!editingProject && <Steps current={currentStep} style={{ marginBottom: 24 }}><Steps.Step title="基本信息" icon={<Box />} /><Steps.Step title="配置模型" icon={<Settings />} /><Steps.Step title="选择技能" icon={<Sparkles />} /></Steps>}
         <Form form={form} layout="vertical">
@@ -306,31 +305,33 @@ export default function ProjectsPage() {
           )}
           {currentStep === 2 && (
             <>
-              <Text strong style={{ display: "block", marginBottom: 16 }}>选择要启用的技能（默认已选择核心技能）</Text>
-              <Checkbox.Group value={selectedSkills} onChange={(vals) => setSelectedSkills(vals as string[])} style={{ width: "100%" }}>
-                <Space direction="vertical" style={{ width: "100%" }}>
-                  <Divider orientation="left">核心</Divider>
-                  <Checkbox value="memory">记忆管理 - 长期记忆存储和检索</Checkbox>
-                  <Divider orientation="left">工具</Divider>
-                  <Space wrap>
-                    <Checkbox value="web-fetch">Web Fetch</Checkbox><Checkbox value="web-search">Web Search</Checkbox><Checkbox value="calculator">Calculator</Checkbox><Checkbox value="file-read">File Read</Checkbox><Checkbox value="weather">天气查询</Checkbox>
-                  </Space>
-                  <Divider orientation="left">飞书</Divider>
-                  <Space wrap>
-                    <Checkbox value="feishu-bitable">飞书多维表格</Checkbox><Checkbox value="feishu-calendar">飞书日历</Checkbox><Checkbox value="feishu-task">飞书任务</Checkbox><Checkbox value="feishu-im">飞书消息</Checkbox>
-                  </Space>
-                </Space>
-              </Checkbox.Group>
+              <Text strong style={{ display: "block", marginBottom: 8 }}>以下为 CoPaw 内置 Skills，创建项目后可随时在控制台启用/禁用</Text>
+              <div style={{ maxHeight: 360, overflowY: "auto", border: "1px solid #f0f0f0", borderRadius: 8, padding: "8px 12px" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #f0f0f0" }}>
+                      <th style={{ textAlign: "left", padding: "4px 8px 4px 0", color: "#888" }}>Skill</th>
+                      <th style={{ textAlign: "left", padding: "4px 8px", color: "#888" }}>说明</th>
+                      <th style={{ textAlign: "left", padding: "4px 0 4px 8px", color: "#888" }}>来源</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: "1px solid #f5f5f5" }}><td style={{ padding: "6px 8px 6px 0" }}><Tag>cron</Tag></td><td style={{ padding: "6px 8px", color: "#444" }}>定时任务管理（创建/查询/暂停/恢复/删除定时任务）</td><td style={{ padding: "6px 0 6px 8px" }}><Tag color="blue">自建</Tag></td></tr>
+                    <tr style={{ borderBottom: "1px solid #f5f5f5" }}><td style={{ padding: "6px 8px 6px 0" }}><Tag>file_reader</Tag></td><td style={{ padding: "6px 8px", color: "#444" }}>读取与摘要文本类文件（.txt, .md, .json, .csv, .log, .py 等）</td><td style={{ padding: "6px 0 6px 8px" }}><Tag color="blue">自建</Tag></td></tr>
+                    <tr style={{ borderBottom: "1px solid #f5f5f5" }}><td style={{ padding: "6px 8px 6px 0" }}><Tag>dingtalk_channel_connect</Tag></td><td style={{ padding: "6px 8px", color: "#444" }}>辅助完成钉钉频道接入流程</td><td style={{ padding: "6px 0 6px 8px" }}><Tag color="blue">自建</Tag></td></tr>
+                    <tr style={{ borderBottom: "1px solid #f5f5f5" }}><td style={{ padding: "6px 8px 6px 0" }}><Tag>himalaya</Tag></td><td style={{ padding: "6px 8px", color: "#444" }}>通过 CLI 管理邮件（IMAP/SMTP），支持多账户与附件管理</td><td style={{ padding: "6px 0 6px 8px" }}><Tag color="green">OpenClaw</Tag></td></tr>
+                    <tr style={{ borderBottom: "1px solid #f5f5f5" }}><td style={{ padding: "6px 8px 6px 0" }}><Tag>news</Tag></td><td style={{ padding: "6px 8px", color: "#444" }}>从指定新闻站点查询最新新闻，支持政治/财经/社会/国际/科技/体育/娱乐等分类摘要</td><td style={{ padding: "6px 0 6px 8px" }}><Tag color="blue">自建</Tag></td></tr>
+                    <tr style={{ borderBottom: "1px solid #f5f5f5" }}><td style={{ padding: "6px 8px 6px 0" }}><Tag>pdf</Tag></td><td style={{ padding: "6px 8px", color: "#444" }}>PDF 阅读/提取文字表格/合并拆分/旋转/水印/创建/填表/加密解密/OCR 等</td><td style={{ padding: "6px 0 6px 8px" }}><Tag color="orange">anthropics/skills</Tag></td></tr>
+                    <tr style={{ borderBottom: "1px solid #f5f5f5" }}><td style={{ padding: "6px 8px 6px 0" }}><Tag>docx</Tag></td><td style={{ padding: "6px 8px", color: "#444" }}>Word 文档（.docx）创建/阅读/编辑，含目录/页眉页脚/表格/图片/修订与批注</td><td style={{ padding: "6px 0 6px 8px" }}><Tag color="orange">anthropics/skills</Tag></td></tr>
+                    <tr style={{ borderBottom: "1px solid #f5f5f5" }}><td style={{ padding: "6px 8px 6px 0" }}><Tag>pptx</Tag></td><td style={{ padding: "6px 8px", color: "#444" }}>PPT（.pptx）创建/阅读/编辑，含模板/版式/备注与批注</td><td style={{ padding: "6px 0 6px 8px" }}><Tag color="orange">anthropics/skills</Tag></td></tr>
+                    <tr style={{ borderBottom: "1px solid #f5f5f5" }}><td style={{ padding: "6px 8px 6px 0" }}><Tag>xlsx</Tag></td><td style={{ padding: "6px 8px", color: "#444" }}>表格（.xlsx/.xlsm/.csv/.tsv）读取/编辑/创建/格式整理，支持公式与数据分析</td><td style={{ padding: "6px 0 6px 8px" }}><Tag color="orange">anthropics/skills</Tag></td></tr>
+                    <tr><td style={{ padding: "6px 8px 6px 0" }}><Tag>browser_visible</Tag></td><td style={{ padding: "6px 8px", color: "#444" }}>以可见模式（headed）启动真实浏览器窗口，适用于演示/调试/需要人工参与的场景</td><td style={{ padding: "6px 0 6px 8px" }}><Tag color="blue">自建</Tag></td></tr>
+                  </tbody>
+                </table>
+              </div>
               <Space style={{ marginTop: 16 }}>
                 <Button onClick={handleFinish}>稍后配置</Button>
-                <Button type="primary" onClick={async () => {
-                  message.loading({ content: "正在配置技能...", key: "skills" });
-                  const response = await fetch("/api/docker/config-skills", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ project_name: form.getFieldValue("name"), skills: selectedSkills }) });
-                  const result = await response.json();
-                  if (response.ok && result.success) message.success({ content: "技能配置成功！", key: "skills" });
-                  else message.warning({ content: "部分配置失败，可稍后重试", key: "skills" });
-                  handleFinish();
-                }}>完成</Button>
+                <Button type="primary" onClick={handleFinish}>完成</Button>
               </Space>
             </>
           )}
