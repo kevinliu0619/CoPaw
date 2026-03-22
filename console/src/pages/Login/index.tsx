@@ -1,147 +1,93 @@
-import { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Button, Card, Form, Input, message } from "antd";
-import { LockOutlined, UserOutlined } from "@ant-design/icons";
-import { authApi } from "../../api/modules/auth";
-import { setAuthToken } from "../../api/config";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, Form, Input, Button, Typography, message } from "antd";
+
+const { Title } = Typography;
+
+// 调用本地后端代理接口（解决 CORS 问题）
+const LOGIN_API = "/api/auth/external-login";
 
 export default function LoginPage() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
-  const [isRegister, setIsRegister] = useState(false);
-  const [hasUsers, setHasUsers] = useState(true);
 
-  useEffect(() => {
-    authApi
-      .getStatus()
-      .then((res) => {
-        if (!res.enabled) {
-          navigate("/chat", { replace: true });
-          return;
-        }
-        setHasUsers(res.has_users);
-        if (!res.has_users) {
-          setIsRegister(true);
-        }
-      })
-      .catch(() => {});
-  }, [navigate]);
-
-  const onFinish = async (values: { username: string; password: string }) => {
+  const handleLogin = async (values: { username: string; password: string }) => {
     setLoading(true);
+    console.log("开始登录...", values.username);
+    
     try {
-      const raw = searchParams.get("redirect") || "/chat";
-      const redirect =
-        raw.startsWith("/") && !raw.startsWith("//") ? raw : "/chat";
+      const response = await fetch(LOGIN_API, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: values.username,
+          password: values.password,
+        }),
+      });
 
-      if (isRegister) {
-        const res = await authApi.register(values.username, values.password);
-        if (res.token) {
-          setAuthToken(res.token);
-          message.success(t("login.registerSuccess"));
-          navigate(redirect, { replace: true });
-        }
+      console.log("响应状态:", response.status);
+      const data = await response.json();
+      console.log("登录响应:", data);
+
+      if (response.ok && data.code === 0) {
+        // 登录成功，保存用户信息到 localStorage
+        localStorage.setItem("copaw_user", JSON.stringify({
+          username: values.username,
+          token: data.data?.token || "",
+          loginTime: Date.now()
+        }));
+        message.success("登录成功！");
+        navigate("/projects");
       } else {
-        const res = await authApi.login(values.username, values.password);
-        if (res.token) {
-          setAuthToken(res.token);
-          navigate(redirect, { replace: true });
-        } else {
-          message.info(t("login.authNotEnabled"));
-          navigate(redirect, { replace: true });
-        }
+        // 登录失败
+        message.error(data.message || data.detail || "用户名或密码错误");
+        setLoading(false);
       }
-    } catch (err) {
-      message.error(
-        isRegister
-          ? err instanceof Error
-            ? err.message
-            : t("login.registerFailed")
-          : t("login.failed"),
-      );
-    } finally {
+    } catch (error: any) {
+      console.error("登录请求失败:", error);
+      message.error("登录请求失败: " + error.message);
       setLoading(false);
     }
   };
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-      }}
-    >
-      <Card
-        style={{
-          width: 400,
-          boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
-          borderRadius: 12,
-        }}
-      >
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <img
-            src={`${import.meta.env.BASE_URL}logo.png`}
-            alt="CoPaw"
-            style={{ height: 48, marginBottom: 12 }}
-          />
-          <h2 style={{ margin: 0, fontWeight: 600, fontSize: 20 }}>
-            {isRegister ? t("login.registerTitle") : t("login.title")}
-          </h2>
-          {!hasUsers && (
-            <p
-              style={{
-                margin: "8px 0 0",
-                color: "#666",
-                fontSize: 13,
-              }}
-            >
-              {t("login.firstUserHint")}
-            </p>
-          )}
+    <div style={{
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "#f5f5f5"
+    }}>
+      <Card style={{ width: 400, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <Title level={3}>🐱 CoPaw 管理后台</Title>
         </div>
-
+        
         <Form
-          layout="vertical"
-          onFinish={onFinish}
+          name="login"
+          onFinish={handleLogin}
           autoComplete="off"
-          size="large"
+          layout="vertical"
         >
           <Form.Item
             name="username"
-            rules={[{ required: true, message: t("login.usernameRequired") }]}
+            rules={[{ required: true, message: "请输入用户名" }]}
           >
-            <Input
-              prefix={<UserOutlined />}
-              placeholder={t("login.usernamePlaceholder")}
-              autoFocus
-            />
+            <Input prefix="👤" placeholder="请输入用户名" size="large" />
           </Form.Item>
 
           <Form.Item
             name="password"
-            rules={[{ required: true, message: t("login.passwordRequired") }]}
+            rules={[{ required: true, message: "请输入密码" }]}
           >
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder={t("login.passwordPlaceholder")}
-            />
+            <Input.Password prefix="🔒" placeholder="请输入密码" size="large" />
           </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              block
-              style={{ height: 44, borderRadius: 8, fontWeight: 500 }}
-            >
-              {isRegister ? t("login.register") : t("login.submit")}
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading} block size="large">
+              登录
             </Button>
           </Form.Item>
         </Form>

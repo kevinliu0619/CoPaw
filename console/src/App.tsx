@@ -1,6 +1,6 @@
 import { createGlobalStyle } from "antd-style";
 import { ConfigProvider, bailianTheme } from "@agentscope-ai/design";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import zhCN from "antd/locale/zh_CN";
@@ -14,10 +14,11 @@ import "dayjs/locale/zh-cn";
 import "dayjs/locale/ja";
 import "dayjs/locale/ru";
 import MainLayout from "./layouts/MainLayout";
+import ProjectsPage from "./pages/Projects";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import LoginPage from "./pages/Login";
-import { authApi } from "./api/modules/auth";
-import { getApiUrl, getApiToken, clearAuthToken } from "./api/config";
+// import { authApi } from "./api/modules/auth";
+// import { getApiUrl, getApiToken, clearAuthToken } from "./api/config";
 import "./styles/layout.css";
 import "./styles/form-override.css";
 
@@ -46,47 +47,22 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<"loading" | "auth-required" | "ok">(
     "loading",
   );
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await authApi.getStatus();
-        if (cancelled) return;
-        if (!res.enabled) {
-          setStatus("ok");
-          return;
-        }
-        const token = getApiToken();
-        if (!token) {
-          setStatus("auth-required");
-          return;
-        }
-        try {
-          const r = await fetch(getApiUrl("/auth/verify"), {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (cancelled) return;
-          if (r.ok) {
-            setStatus("ok");
-          } else {
-            clearAuthToken();
-            setStatus("auth-required");
-          }
-        } catch {
-          if (!cancelled) {
-            clearAuthToken();
-            setStatus("auth-required");
-          }
-        }
-      } catch {
-        if (!cancelled) setStatus("ok");
+    // 检查本地存储的登录状态（套壳登录）
+    const user = localStorage.getItem("copaw_user");
+    if (user) {
+      setStatus("ok");
+      // 如果访问根路径，跳转到项目列表
+      if (location.pathname === "/") {
+        navigate("/projects", { replace: true });
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    } else {
+      setStatus("auth-required");
+    }
+  }, [location.pathname, navigate]);
 
   if (status === "loading") return null;
   if (status === "auth-required")
@@ -145,6 +121,7 @@ function AppInner() {
       >
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
           <Route
             path="/*"
             element={

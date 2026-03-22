@@ -39,10 +39,9 @@ import {
   Mic,
   Bot,
   LogOut,
+  User,
 } from "lucide-react";
 import api from "../api";
-import { clearAuthToken } from "../api/config";
-import { authApi } from "../api/modules/auth";
 import styles from "./index.module.less";
 import { useTheme } from "../contexts/ThemeContext";
 import {
@@ -107,16 +106,8 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
   const [latestVersion, setLatestVersion] = useState<string>("");
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [updateMarkdown, setUpdateMarkdown] = useState<string>("");
-  const [authEnabled, setAuthEnabled] = useState(false);
 
   // ── Effects ──────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    authApi
-      .getStatus()
-      .then((res) => setAuthEnabled(res.enabled))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (!collapsed) setOpenKeys(DEFAULT_OPEN_KEYS);
@@ -300,6 +291,23 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
         },
       ],
     },
+    {
+      key: "profile-group",
+      label: "个人中心",
+      icon: <User size={16} />,
+      children: [
+        {
+          key: "profile",
+          label: "个人中心",
+          icon: <User size={16} />,
+        },
+        {
+          key: "project-list",
+          label: "返回项目列表",
+          icon: <Box size={16} />,
+        },
+      ],
+    },
   ];
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -359,34 +367,26 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
         openKeys={openKeys}
         onOpenChange={(keys) => setOpenKeys(keys as string[])}
         onClick={({ key }) => {
+          if (key === "logout") {
+            // 套壳登出
+            localStorage.removeItem("copaw_user");
+            localStorage.removeItem("copaw_current_project");
+            window.location.href = "/login";
+            return;
+          }
           const path = KEY_TO_PATH[String(key)];
           if (path) navigate(path);
         }}
-        items={menuItems}
+        items={[
+          ...menuItems,
+          {
+            key: "logout",
+            label: "退出登录",
+            icon: <LogOut size={16} />,
+          },
+        ]}
         theme={isDark ? "dark" : "light"}
       />
-
-      {authEnabled && (
-        <div style={{ padding: "12px 16px", borderTop: "1px solid #f0f0f0" }}>
-          <Button
-            type="text"
-            icon={<LogOut size={16} />}
-            onClick={() => {
-              clearAuthToken();
-              window.location.href = "/login";
-            }}
-            block
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              justifyContent: collapsed ? "center" : "flex-start",
-            }}
-          >
-            {!collapsed && t("login.logout")}
-          </Button>
-        </div>
-      )}
 
       <Modal
         open={updateModalOpen}

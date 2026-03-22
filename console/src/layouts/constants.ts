@@ -15,6 +15,7 @@ export const DEFAULT_OPEN_KEYS = [
   "control-group",
   "agent-group",
   "settings-group",
+  "profile-group",
 ];
 
 export const KEY_TO_PATH: Record<string, string> = {
@@ -34,6 +35,8 @@ export const KEY_TO_PATH: Record<string, string> = {
   security: "/security",
   "token-usage": "/token-usage",
   "voice-transcription": "/voice-transcription",
+  profile: "/profile",
+  "project-list": "/projects",
 };
 
 export const KEY_TO_LABEL: Record<string, string> = {

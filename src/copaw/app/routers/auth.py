@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 
+import httpx
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
@@ -16,6 +17,14 @@ from ..auth import (
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# 内置账号密码（小龙虾 CoPaw）
+BUILT_IN_USERS = {
+    "liuqifan@bosssoft.com.cn": "bssoft@123",
+}
+
+# 外部登录 API 地址（保留备用）
+EXTERNAL_LOGIN_API = "http://aiplatform-func.ibosssoft.com.cn/api/cas/users/login"
 
 
 class LoginRequest(BaseModel):
@@ -111,3 +120,24 @@ async def verify(request: Request):
         )
 
     return {"valid": True, "username": username}
+
+
+@router.post("/external-login")
+async def external_login(req: LoginRequest):
+    """内置账号登录（不再访问外部 API）"""
+    # 直接检查内置账号密码
+    expected_password = BUILT_IN_USERS.get(req.username)
+    if expected_password is None or expected_password != req.password:
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+
+    # 生成一个假的 token（本地验证用）
+    import time
+    token = f"builtin_{req.username}_{int(time.time() * 1000)}"
+
+    return {
+        "code": 0,
+        "data": {
+            "token": token,
+            "username": req.username,
+        }
+    }
